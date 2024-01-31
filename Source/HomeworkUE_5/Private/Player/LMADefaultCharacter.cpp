@@ -118,7 +118,7 @@ void ALMADefaultCharacter::MoveCamera(float Value) {
 
 void ALMADefaultCharacter::Sprint(float Value) {
 	world = GetWorld();
-	if (IsValid(world) && Stamina < 100 && (Value <= 0 || (!BaF && !RaL)))
+	if (IsValid(world) && Stamina < 100 && ((Value <= 0 || (!BaF && !RaL)) || Stamina <= 0))
 	{
 		STimeNow = world->GetTimeSeconds();
 		if ((STimeNow - STimeOld) >= StaminaTime) {
