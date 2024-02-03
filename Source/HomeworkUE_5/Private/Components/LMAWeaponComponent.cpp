@@ -10,11 +10,15 @@ ULMAWeaponComponent::ULMAWeaponComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-void ULMAWeaponComponent::Fire()
-{
-	if (IsValid(Weapon) && !AnimReloading)
-	{
-		Weapon->Fire();
+void ULMAWeaponComponent::Fire(float Value) {
+	world = GetWorld();
+	if (IsValid(Weapon) && !AnimReloading && Value > 0) {
+		FTimeNow = world->GetTimeSeconds();
+		if ((FTimeNow - FTimeOld) >= FireTime)
+		{
+			Weapon->Fire();
+			FTimeOld = FTimeNow;
+		}
 	}
 }
 
@@ -24,6 +28,14 @@ void ULMAWeaponComponent::BeginPlay()
 
 	SpawnWeapon();
 	InitAnimNotify();
+}
+
+void ULMAWeaponComponent::ThisReload() {
+	if (!CanReload()) return;
+	Weapon->ChangeClip();
+	AnimReloading = true;
+	ACharacter* Character = Cast<ACharacter>(GetOwner());
+	Character->PlayAnimMontage(ReloadMontage);
 }
 
 void ULMAWeaponComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -43,12 +55,12 @@ void ULMAWeaponComponent::SpawnWeapon()
 			Weapon->AttachToComponent(Character->GetMesh(), AttachmentRules, "r_Weapon_Socket"); // WeaponSocket
 		}
 	}
+	Weapon->IsBulletsEmpty.AddUObject(this, &ULMAWeaponComponent::ThisReload);
 }
 
 void ULMAWeaponComponent::InitAnimNotify()
 {
-	if (!ReloadMontage)
-		return;
+	if (!ReloadMontage) return;
 
 	const auto NotifiesEvents = ReloadMontage->Notifies;
 	for (auto NotifyEvent : NotifiesEvents)
@@ -73,16 +85,8 @@ void ULMAWeaponComponent::OnNotifyReloadFinished(USkeletalMeshComponent* Skeleta
 
 bool ULMAWeaponComponent::CanReload() const
 {
-	// return !AnimReloading && Weapon->CanReload(); Доработать.
-	return !AnimReloading;
+	return !AnimReloading && Weapon->CanReload();
 }
 
-void ULMAWeaponComponent::Reload()
-{
-	if (!CanReload())
-		return;
-	AnimReloading = true;
-	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	Character->PlayAnimMontage(ReloadMontage);
-}
+void ULMAWeaponComponent::Reload() { ThisReload(); }
 

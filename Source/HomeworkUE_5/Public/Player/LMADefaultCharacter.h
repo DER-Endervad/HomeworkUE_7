@@ -11,6 +11,7 @@ class USpringArmComponent;
 class ULMAHealthComponent;
 class UAnimMontage;
 class ALMABaseWeapon;
+class ULMAWeaponComponent;
 
 UCLASS()
 class HOMEWORKUE_5_API ALMADefaultCharacter : public ACharacter
@@ -46,6 +47,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components|Weapon")
 	ALMABaseWeapon* BaseWeapon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	ULMAWeaponComponent* WeaponComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sprint")
 	float Stamina = 100.0f;

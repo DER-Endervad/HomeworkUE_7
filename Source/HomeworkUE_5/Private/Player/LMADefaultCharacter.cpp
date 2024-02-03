@@ -11,6 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/Engine.h"
 #include "Weapon/LMABaseWeapon.h"
+#include "Components/LMAWeaponComponent.h"
 
 ALMADefaultCharacter::ALMADefaultCharacter()
 {
@@ -35,6 +36,8 @@ ALMADefaultCharacter::ALMADefaultCharacter()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
+
+	WeaponComponent = CreateDefaultSubobject<ULMAWeaponComponent>("Weapon");
 }
 
 void ALMADefaultCharacter::BeginPlay()
@@ -82,7 +85,10 @@ void ALMADefaultCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis("MoveRight", this, &ALMADefaultCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("MoveCamera", this, &ALMADefaultCharacter::MoveCamera);
 	PlayerInputComponent->BindAxis("Sprint", this, &ALMADefaultCharacter::Sprint);
-	PlayerInputComponent->BindAction("Shoot", IE_Pressed, BaseWeapon, &ALMABaseWeapon::Fire);
+	//PlayerInputComponent->BindAction("Shoot", IE_Pressed, BaseWeapon, &ALMABaseWeapon::Fire); было сказанно в вебинаре.
+	// PlayerInputComponent->BindAction("Fire", IE_Pressed, WeaponComponent, &ULMAWeaponComponent::Fire); Старая версия стрельбы
+	PlayerInputComponent->BindAxis("Fire", WeaponComponent, &ULMAWeaponComponent::Fire);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, WeaponComponent, &ULMAWeaponComponent::ThisReload);
 }
 
 void ALMADefaultCharacter::MoveForward(float Value)

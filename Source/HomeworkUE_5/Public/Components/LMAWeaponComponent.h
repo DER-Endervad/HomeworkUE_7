@@ -17,8 +17,9 @@ class HOMEWORKUE_5_API ULMAWeaponComponent : public UActorComponent
 public:
 	ULMAWeaponComponent();
 
-	void Fire();
+	void Fire(float Value);
 	void Reload();
+	void ThisReload();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
@@ -27,8 +28,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	UAnimMontage* ReloadMontage;
 
-	virtual void BeginPlay() override;
+	UPROPERTY()
+	UWorld* world;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fire")
+	float FireTime = 0.25f;
+
+	float FTimeOld = 0.0f;
+	float FTimeNow = 0.0f;
+
+	virtual void BeginPlay() override;
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

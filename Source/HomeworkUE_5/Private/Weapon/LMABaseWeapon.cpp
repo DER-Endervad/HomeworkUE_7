@@ -51,6 +51,7 @@ void ALMABaseWeapon::DecrementBullets()
 
 	if (IsCurrentClipEmpty())
 	{
+		IsBulletsEmpty.Broadcast();
 		ChangeClip();
 	}
 }
@@ -63,6 +64,15 @@ bool ALMABaseWeapon::IsCurrentClipEmpty() const
 void ALMABaseWeapon::ChangeClip()
 {
 	CurrentAmmoWeapon.Bullets = AmmoWeapon.Bullets;
+}
+
+bool ALMABaseWeapon::CanReload()
+{
+	if (CurrentAmmoWeapon.Bullets < 30) {
+		return true; 
+	} else {
+		return false;
+	}
 }
 
 void ALMABaseWeapon::Tick(float DeltaTime)
