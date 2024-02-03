@@ -17,7 +17,8 @@ class HOMEWORKUE_5_API ULMAWeaponComponent : public UActorComponent
 public:
 	ULMAWeaponComponent();
 
-	void Fire(float Value);
+	void Fire();
+	void FireStop();
 	void Reload();
 	void ThisReload();
 
@@ -37,7 +38,10 @@ protected:
 	float FTimeOld = 0.0f;
 	float FTimeNow = 0.0f;
 
+	bool IsFire = false;
+
 	virtual void BeginPlay() override;
+
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

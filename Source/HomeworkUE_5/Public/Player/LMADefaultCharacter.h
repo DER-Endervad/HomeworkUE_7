@@ -95,7 +95,9 @@ private:
 	void MoveRight(float Value);
 	void MoveCamera(float Value);
 
-	void Sprint(float Value);
+	void Sprint();
+	void SprintStop();
+	//void Sprint(float Value);
 
 	void OnDeath();
 	void OnHealthChanged(float NewHealth);

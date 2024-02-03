@@ -10,16 +10,12 @@ ULMAWeaponComponent::ULMAWeaponComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-void ULMAWeaponComponent::Fire(float Value) {
-	world = GetWorld();
-	if (IsValid(Weapon) && !AnimReloading && Value > 0) {
-		FTimeNow = world->GetTimeSeconds();
-		if ((FTimeNow - FTimeOld) >= FireTime)
-		{
-			Weapon->Fire();
-			FTimeOld = FTimeNow;
-		}
-	}
+void ULMAWeaponComponent::Fire() {
+	IsFire = true;
+}
+
+void ULMAWeaponComponent::FireStop() {
+	IsFire = false;
 }
 
 void ULMAWeaponComponent::BeginPlay()
@@ -28,6 +24,7 @@ void ULMAWeaponComponent::BeginPlay()
 
 	SpawnWeapon();
 	InitAnimNotify();
+	world = GetWorld();
 }
 
 void ULMAWeaponComponent::ThisReload() {
@@ -41,6 +38,14 @@ void ULMAWeaponComponent::ThisReload() {
 void ULMAWeaponComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (IsValid(Weapon) && !AnimReloading && IsFire) {
+		FTimeNow = world->GetTimeSeconds();
+		if ((FTimeNow - FTimeOld) >= FireTime) {
+			Weapon->Fire();
+			FTimeOld = FTimeNow;
+		}
+	}
 }
 
 void ULMAWeaponComponent::SpawnWeapon()

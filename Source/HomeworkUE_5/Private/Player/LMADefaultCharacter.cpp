@@ -13,8 +13,7 @@
 #include "Weapon/LMABaseWeapon.h"
 #include "Components/LMAWeaponComponent.h"
 
-ALMADefaultCharacter::ALMADefaultCharacter()
-{
+ALMADefaultCharacter::ALMADefaultCharacter() {
 
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -40,27 +39,48 @@ ALMADefaultCharacter::ALMADefaultCharacter()
 	WeaponComponent = CreateDefaultSubobject<ULMAWeaponComponent>("Weapon");
 }
 
-void ALMADefaultCharacter::BeginPlay()
-{
+void ALMADefaultCharacter::BeginPlay() {
 	Super::BeginPlay();
 
-	if (CursorMaterial)
-	{
+	if (CursorMaterial) {
 		CurrentCursor = UGameplayStatics::SpawnDecalAtLocation(GetWorld(), CursorMaterial, CursorSize, FVector(0));
 	}
 
 	OnHealthChanged(HealthComponent->GetHealth());
 	HealthComponent->OnDeath.AddUObject(this, &ALMADefaultCharacter::OnDeath);
 	HealthComponent->OnHealthChanged.AddUObject(this, &ALMADefaultCharacter::OnHealthChanged);
+	world = GetWorld();
 }
 
-void ALMADefaultCharacter::Tick(float DeltaTime)
-{
+void ALMADefaultCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	if (!(HealthComponent->IsDead()))
-	{
+	if (!(HealthComponent->IsDead())) {
 		RotationPlayerOnCursor();
+	}
+
+	if (IsValid(world) && Stamina < 100 && ((!Shift || (!BaF && !RaL)) || Stamina <= 0)) {
+		STimeNow = world->GetTimeSeconds();
+		if ((STimeNow - STimeOld) >= StaminaTime) {
+			if (RaL || BaF) {
+				Stamina = Stamina + 0.5;
+			} else {
+				Stamina = Stamina + 1;
+			}
+			STimeOld = STimeNow;
+			if (Stamina > 100) {
+				Stamina = 100;
+			}
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Stamina = %f"), Stamina));
+		}
+	}
+
+	if (Shift) {
+		if (Stamina > 0 && (BaF || RaL)) {
+			Shift = true;
+			Stamina = Stamina - 0.25;
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Stamina = %f"), Stamina));
+		}
 	}
 
 	/*APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -77,22 +97,26 @@ void ALMADefaultCharacter::Tick(float DeltaTime)
 	}*/
 }
 
-void ALMADefaultCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
+void ALMADefaultCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ALMADefaultCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ALMADefaultCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("MoveCamera", this, &ALMADefaultCharacter::MoveCamera);
-	PlayerInputComponent->BindAxis("Sprint", this, &ALMADefaultCharacter::Sprint);
-	//PlayerInputComponent->BindAction("Shoot", IE_Pressed, BaseWeapon, &ALMABaseWeapon::Fire); было сказанно в вебинаре.
-	// PlayerInputComponent->BindAction("Fire", IE_Pressed, WeaponComponent, &ULMAWeaponComponent::Fire); Старая версия стрельбы
-	PlayerInputComponent->BindAxis("Fire", WeaponComponent, &ULMAWeaponComponent::Fire);
+
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ALMADefaultCharacter::Sprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ALMADefaultCharacter::SprintStop);
+
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, WeaponComponent, &ULMAWeaponComponent::Fire); 
+	PlayerInputComponent->BindAction("Fire", IE_Released, WeaponComponent, &ULMAWeaponComponent::FireStop);
+
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, WeaponComponent, &ULMAWeaponComponent::ThisReload);
+	// PlayerInputComponent->BindAxis("Sprint", this, &ALMADefaultCharacter::Sprint); Старый бег
+	// PlayerInputComponent->BindAction("Shoot", IE_Pressed, BaseWeapon, &ALMABaseWeapon::Fire); было сказанно в вебинаре.
+	// PlayerInputComponent->BindAxis("Fire", WeaponComponent, &ULMAWeaponComponent::Fire);
 }
 
-void ALMADefaultCharacter::MoveForward(float Value)
-{
+void ALMADefaultCharacter::MoveForward(float Value) {
 	AddMovementInput(GetActorForwardVector(), Value);
 	if (Value != 0) {
 		BaF = true;
@@ -101,59 +125,67 @@ void ALMADefaultCharacter::MoveForward(float Value)
 	}
 }
 
-void ALMADefaultCharacter::MoveRight(float Value)
-{
+void ALMADefaultCharacter::MoveRight(float Value) {
 	AddMovementInput(GetActorRightVector(), Value);
 	if (Value != 0) {
 		RaL = true;
 	} else {
 		RaL = false;
 	}
-} 
+}
 
 void ALMADefaultCharacter::MoveCamera(float Value) {
 	ArmLength = ArmLength + Value;
 	if (ArmLength > ArmMax) {
 		ArmLength = ArmMax;
-	}
-	else if (ArmLength < ArmMin) {
+	} else if (ArmLength < ArmMin) {
 		ArmLength = ArmMin;
 	}
 	SpringArmComponent->TargetArmLength = ArmLength;
 }
 
-void ALMADefaultCharacter::Sprint(float Value) {
-	world = GetWorld();
-	if (IsValid(world) && Stamina < 100 && ((Value <= 0 || (!BaF && !RaL)) || Stamina <= 0))
-	{
-		STimeNow = world->GetTimeSeconds();
-		if ((STimeNow - STimeOld) >= StaminaTime) {
-			if (RaL || BaF) {
-				Stamina = Stamina + 0.5;
-			} else {
-				Stamina = Stamina + 1;
-			}
-			STimeOld = STimeNow;
-			if (Stamina > 100) { Stamina = 100; }
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Stamina = %f"), Stamina));
-		}
-	}
-
-	if (Stamina > 0 && Value > 0 && (BaF || RaL)) {
-		Shift = true;
-		GetCharacterMovement()->MaxWalkSpeed = SpeedSprint;
-		Stamina = Stamina - (Value/4);
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Stamina = %f"), Stamina));
-	}
-
-	if (Value <= 0 || Stamina <= 0 || (!BaF && !RaL)) {
-		Shift = false;
-		GetCharacterMovement()->MaxWalkSpeed = SpeedWalk;
-	}
+void ALMADefaultCharacter::Sprint() {
+	GetCharacterMovement()->MaxWalkSpeed = SpeedSprint;
+	Shift = true;
 }
 
-void ALMADefaultCharacter::OnDeath()
-{
+void ALMADefaultCharacter::SprintStop() {
+	GetCharacterMovement()->MaxWalkSpeed = SpeedWalk;
+	Shift = false;
+}
+
+// void ALMADefaultCharacter::Sprint(float Value) {
+//	world = GetWorld();
+//	if (IsValid(world) && Stamina < 100 && ((Value <= 0 || (!BaF && !RaL)) || Stamina <= 0)) {
+//		STimeNow = world->GetTimeSeconds();
+//		if ((STimeNow - STimeOld) >= StaminaTime) {
+//			if (RaL || BaF) {
+//				Stamina = Stamina + 0.5;
+//			} else {
+//				Stamina = Stamina + 1;
+//			}
+//			STimeOld = STimeNow;
+//			if (Stamina > 100) {
+//				Stamina = 100;
+//			}
+//			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Stamina = %f"), Stamina));
+//		}
+//	}
+//
+//	if (Stamina > 0 && Value > 0 && (BaF || RaL)) {
+//		Shift = true;
+//		GetCharacterMovement()->MaxWalkSpeed = SpeedSprint;
+//		Stamina = Stamina - (Value / 4);
+//		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Stamina = %f"), Stamina));
+//	}
+//
+//	if (Value <= 0 || Stamina <= 0 || (!BaF && !RaL)) {
+//		Shift = false;
+//		GetCharacterMovement()->MaxWalkSpeed = SpeedWalk;
+//	}
+// }
+
+void ALMADefaultCharacter::OnDeath() {
 	CurrentCursor->DestroyRenderState_Concurrent();
 
 	PlayAnimMontage(DeathMontage);
@@ -162,30 +194,24 @@ void ALMADefaultCharacter::OnDeath()
 
 	SetLifeSpan(5.0f);
 
-	if (Controller)
-	{
+	if (Controller) {
 		Controller->ChangeState(NAME_Spectating);
 	}
 }
 
-void ALMADefaultCharacter::OnHealthChanged(float NewHealth)
-{
+void ALMADefaultCharacter::OnHealthChanged(float NewHealth) {
 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Health = %f"), NewHealth));
 }
 
-void ALMADefaultCharacter::RotationPlayerOnCursor()
-{
+void ALMADefaultCharacter::RotationPlayerOnCursor() {
 	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	if (PC)
-	{
+	if (PC) {
 		FHitResult ResultHit;
 		PC->GetHitResultUnderCursor(ECC_GameTraceChannel1, true, ResultHit);
 		float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), ResultHit.Location).Yaw;
 		SetActorRotation(FQuat(FRotator(0.0f, FindRotatorResultYaw, 0.0f)));
-		if (CurrentCursor)
-		{
+		if (CurrentCursor) {
 			CurrentCursor->SetWorldLocation(ResultHit.Location);
 		}
 	}
 }
-
