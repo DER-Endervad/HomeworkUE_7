@@ -75,12 +75,12 @@ void ALMADefaultCharacter::Tick(float DeltaTime) {
 		}
 	}
 
-	if (Shift) {
-		if (Stamina > 0 && (BaF || RaL)) {
-			Shift = true;
-			Stamina = Stamina - 0.25;
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Stamina = %f"), Stamina));
-		}
+	if (Shift && Stamina > 0 && (BaF || RaL)) {
+		Shift = true;
+		Stamina = Stamina - 0.25;
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Stamina = %f"), Stamina));
+	} else {
+		SprintStop();
 	}
 
 	/*APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -107,7 +107,7 @@ void ALMADefaultCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ALMADefaultCharacter::Sprint);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ALMADefaultCharacter::SprintStop);
 
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, WeaponComponent, &ULMAWeaponComponent::Fire); 
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, WeaponComponent, &ULMAWeaponComponent::Fire);
 	PlayerInputComponent->BindAction("Fire", IE_Released, WeaponComponent, &ULMAWeaponComponent::FireStop);
 
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, WeaponComponent, &ULMAWeaponComponent::ThisReload);
